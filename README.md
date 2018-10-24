@@ -57,12 +57,13 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
 * 使用 Visual Studio 2017 打开解决方案
 * 设置 .Web 项目为启动项目，并编译
 * 设置数据库的连接字符串:
-  ```
+  ```Json
   "ConnectionStrings": {
     "Default": "Server=localhost; Database=SimpleTaskAppDb; Trusted_Connection=True;"
-
-    本项目使用的为LocalDb，将Server修改为(localdb)\MSSQLLocalDB，修改后的连接为：
-    "ConnectionStrings": {
+  ```
+   本项目使用的为LocalDb，将Server修改为(localdb)\MSSQLLocalDB，修改后的连接为：
+  ```Json
+  "ConnectionStrings": {
     "Default": "Server=(localdb)\MSSQLLocalDB; Database=SimpleTaskAppDb; Trusted_Connection=True;"
     ```
 * F5启动项目.
