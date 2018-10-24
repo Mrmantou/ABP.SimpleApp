@@ -56,7 +56,7 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
 
 * 使用 Visual Studio 2017 打开解决方案
 * 设置 .Web 项目为启动项目，并编译
-* 设置数据库的连接字符串:
+* 设置数据库的连接字符串，修改配置文件appsettings.json:
   ```Json
   "ConnectionStrings": {
     "Default": "Server=localhost; Database=SimpleTaskAppDb; Trusted_Connection=True;"
@@ -74,28 +74,148 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
 
 到此应用程序创建成功。
 
+### 开发应用
+#### 创建Task实体
 
+从简单的Task实体开始，实体对象是领域层(Domain)的一部分，向 .Core 项目添加Task实体:
+```CSharp
+namespace Albert.SimpleTaskApp.Tasks
+{
+    /// <summary>
+    /// 任务
+    /// </summary>
+    [Table("AppTasks")]
+    public class Task : Entity, IHasCreationTime
+    {
+        /// <summary>
+        /// 任务标题
+        /// </summary>
+        [Required]
+        [StringLength(SimpleTaskAppConsts.MaxTitleLength)]
+        public string Title { get; set; }
 
+        /// <summary>
+        /// 任务描述
+        /// </summary>
+        [StringLength(SimpleTaskAppConsts.MaxDescriptionLength)]
+        public string Description { get; set; }
 
-#### 安装教程
+        /// <summary>
+        /// 任务创建时间
+        /// </summary>
+        public DateTime CreationTime { get; set; }
 
-1. xxxx
-2. xxxx
-3. xxxx
+        /// <summary>
+        /// 任务状态
+        /// </summary>
+        public TaskState State { get; set; }
 
-#### 使用说明
+        public Task()
+        {
+            CreationTime = Clock.Now;
+            State = TaskState.Open;
+        }
 
-1. xxxx
-2. xxxx
-3. xxxx
+        public Task(string title, string description = null) : this()
+        {
+            Title = title;
+            Description = description;
+        }
+    }
 
-#### 参与贡献
+    /// <summary>
+    /// 任务状态类型
+    /// </summary>
+    public enum TaskState : byte
+    {
+        Open = 1,
+        Complete = 1
+    }
+}
+```
+* 这里Task实体继承了ABP的基类Entity，Entity包含了默认类型为int的属性Id，这里也可以使用泛型`Entity<TPrimaryKey>`，可以设置主键的类型
+* `IHasCreationTime` 为简单的接口，只包含了`CreationTime`属性(为`CreationTime`使用标准名称是个好习惯)
+* `Task`实体定义了一个必须属性`Title`和一个可选的属性`Description`
+* `TaskState`是个定义`Task`状态的简单枚举类型
+* `Clock.Now`默认返回`DateTime.Now`。它提供了以个抽象，当需要的时候可以很容易的切换到`DateTime.UtcNow`。在ABP框架中通常使用`Clock.Now`来替换`DateTime.Now`
+* 使用注释属性Table表示保存`Task`对象到数据库中的表AppTasks
+* 这里使用注释属性来设置Task在数据库中字段的属性，静态类SimpleTaskAppConsts定义了一下常量
 
-1. Fork 本项目
-2. 新建 Feat_xxx 分支
-3. 提交代码
-4. 新建 Pull Request
+#### 添加Task到DbContext
 
+.EntityFrameworkCore项目中预定义了`DbContext`，这里需要在里面添加`Task`实体的`DbSet`:
+```CSharp
+public class SimpleTaskAppDbContext : AbpDbContext
+{
+    //Add DbSet properties for your entities...
+    public DbSet<Task> Tasks { get; set; }
+
+    public SimpleTaskAppDbContex(DbContextOptions<SimpleTaskAppDbContext> options)
+        : base(options)
+    {
+
+    }
+}
+```
+到此，EF Core就包含了Task实体。
+
+#### 创建第一次数据库迁移
+
+这里创建初始的数据库迁移数据库和表AppTasks。打开**Package Manager Console**，在**Default project** 选择 **.EntityFrameworkCore** 项目(同时还要设置启动项为 .Web 项目，并编译)，执行命令：**add-migration Initial_Task**
+
+![Firstmigration](doc/image/firstmigration.png)
+
+执行成功后在 .EntityFrameworkCore 项目中生成 Migrations 文件夹，其中包括了迁移类和数据库快照：
+
+![Migration1 Reault](doc/image/migration1_reault.png)
+
+自动生成的`Initial_Task`类：
+```csharp
+public partial class Initial_Task : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.CreateTable(
+            name: "AppTasks",
+            columns: table => new
+            {
+                Id = table.Column<int>(nullable: false)
+                    .Annotation("SqlServer:ValueGenerationStrategy",SqlServerValueGenerationStrategy.IdentityColumn),
+                Title = table.Column<string>(maxLength: 256, nullable: false),
+                Description = table.Column<string>(maxLength: 65536, nullable: true),
+                CreationTime = table.Column<DateTime>(nullable: false),
+                State = table.Column<byte>(nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AppTasks", x => x.Id);
+            });
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DropTable(
+            name: "AppTasks");
+    }
+}
+```
+这些代码在执行数据库迁移的时候用来创建表**AppTasks**。
+
+#### 创建数据库
+
+在**Package Manager Console**执行命令：update-database
+
+![Updatedatabase1](doc/image/updatedatabase1.png)
+
+这样将会在数据库实例(本项目使用的是LocalDb)中创建名为SimpleTaskAppDb的数据库(数据库名称在appsettings.json中配置)：
+
+![Database1](doc/image/database1.png)
+
+数据库创建成功此时数据库中还没有数据：
+
+![Databaseresult1](doc/image/databaseresult1.png)
+
+下面通过Seed的方式向数据库中添加初始化数据
 
 #### 码云特技
 
