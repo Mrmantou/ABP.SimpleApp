@@ -1,5 +1,28 @@
 # Albert.SimpleTaskApp
 
+# ASP.NET Core & EntityFramework Core Based Startup Template
+
+This template is a simple startup project to start with ABP
+using ASP.NET Core and EntityFramework Core.
+
+## Prerequirements
+
+* Visual Studio 2017
+* .NET Core SDK
+* SQL Server
+
+## How To Run
+
+* Open solution in Visual Studio 2017
+* Set .Web project as Startup Project and build the project.
+* Run the application.
+
+
+
+https://aspnetboilerplate.com/Pages/Documents/Articles/Introduction-With-AspNet-Core-And-Entity-Framework-Core-Part-1/index.html
+
+https://aspnetboilerplate.com/Templates
+
 #### 项目介绍
 ABP官网教程基于AspNet Core + Entity Framework Core 的MVC demo
 
