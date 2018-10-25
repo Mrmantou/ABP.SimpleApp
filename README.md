@@ -215,7 +215,91 @@ public partial class Initial_Task : Migration
 
 ![Databaseresult1](doc/image/databaseresult1.png)
 
-下面通过Seed的方式向数据库中添加初始化数据
+下面通过Seed的方式向数据库中添加初始化数据；
+
+在.EntityFrameworkCore项目中添加如图所示的文件夹及类：
+
+![Seedfile](doc/image/seedfile.png)
+
+静态类SeedHelper提供了seed数据的方法`SeedDb`：
+```csharp
+public static class SeedHelper
+{
+    public static void SeedDb(IIocResolver iocResolver)
+    {
+        WithDbContext<SimpleTaskAppDbContext>(iocResolver, SeedDb);
+    }
+
+    private static void SeedDb(SimpleTaskAppDbContext context)
+    {
+        new InitialTask(context).Create();
+    }
+
+    private static void WithDbContext<TDbContext>(IIocResolver iocResolver, Action<TDbContext> contextAction)where TDbContext : DbContext
+    {
+        using (var uowManager = iocResolver.ResolveAsDisposable<IUnitOfWorkManager>())
+        {
+            using (var uow = uowManager.Object.Begin(TransactionScopeOption.Suppress))
+            {
+                var context = uowManager.Object.Current.GetDbContext<TDbContext>();
+
+                contextAction(context);
+
+                uow.Complete();
+            }
+        }
+    }
+}
+```
+
+```csharp
+public class InitialTask
+{
+    private readonly SimpleTaskAppDbContext context;
+
+    public InitialTask(SimpleTaskAppDbContext context)
+    {
+        this.context = context;
+    }
+
+    public void Create()
+    {
+        CreateTask();
+    }
+
+    private void CreateTask()
+    {
+        if (context.Tasks.Any())
+        {
+            return;
+        }
+
+        context.AddRange(
+            new Task { Title = "Chinese", Description = "recite the text" },
+            new Task { Title = "Math", Description = "do all the homework" },
+            new Task { Title = "English", Description = "recite new word" }
+            );
+
+        context.SaveChanges();
+    }
+}
+```
+
+```csharp
+public override void PostInitialize()
+{
+    SeedHelper.SeedDb(IocManager);
+}
+```
+* WithDbContext方法通过工作单元的方式来调用`SeedDb(SimpleTaskAppDbContext context)`，
+* InitialTask类中向数据库插入`Task`对象
+* 在SimpleTaskAppEntityFrameworkCore模块的初始化类`SimpleTaskAppEntityFrameworkCoreModule`中重写`PostInitialize`方法，在`PostInitialize`中调用`SeedHelper`的方法向数据库中插入初始数据。
+
+启动项目之后查看数据库：
+
+![Seeddata](doc/image/seeddata.png)
+
+可以发现初始数据已经插入到数据库中。
 
 #### 码云特技
 

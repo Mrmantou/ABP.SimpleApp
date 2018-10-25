@@ -1,6 +1,7 @@
 ﻿using Abp.EntityFrameworkCore;
 using Abp.Modules;
 using Abp.Reflection.Extensions;
+using Albert.SimpleTaskApp.EntityFrameworkCore.Seed;
 
 namespace Albert.SimpleTaskApp.EntityFrameworkCore
 {
@@ -12,6 +13,11 @@ namespace Albert.SimpleTaskApp.EntityFrameworkCore
         public override void Initialize()
         {
             IocManager.RegisterAssemblyByConvention(typeof(SimpleTaskAppEntityFrameworkCoreModule).GetAssembly());
+        }
+
+        public override void PostInitialize()
+        {
+            SeedHelper.SeedDb(IocManager);
         }
     }
 }
