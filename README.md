@@ -301,6 +301,87 @@ public override void PostInitialize()
 
 可以发现初始数据已经插入到数据库中。
 
+#### Task应用服务
+
+应用服务用来向展示层公开领域逻辑。展示层调用应用服务层通过Dto(data transfer object)作为参数(如果需要)，应用层使用领域对象执行特定的业务逻辑并返回Dto对象到展示层(如果需要)。
+
+向.Application项目添加第一个应用服务来处理task相关的应用逻辑，首先定义应用服务接口
+
+```csharp
+public interface ITaskAppService
+{
+    Task<ListResultDto<TaskListDto>> GetAll(GetAllTasksInputinput);
+}
+```
+定义一个接口不是必须的，但是建议这样做。按照惯例，在ABP中所有的应用服务需要实现接口`IApplicationService`(一个起标记作用的空接口)。通过`GetAll`方法类查询tasks，按照前文提到的展示层与应用服务层通过Dto作为数据传输载体，这里需要定义下面的Dto：
+```csharp
+public class GetAllTasksInput
+{
+    public TaskState? State { get; set; }
+}
+
+[AutoMapFrom(typeof(Task))]
+public class TaskListDto : EntityDto, IHasCreationTime
+{
+    public string Title { get; set; }
+    public string Description { get; set; }
+    public DateTime CreationTime { get; set; }
+    public TaskState State { get; set; }
+}
+```
+* `GetAllTasksInput`定义了GetAll方法的输入参数。相对于直接定义一个方法参数state，这里将其加入到Dto对象中，这样在以后添加其他参数到Dto中的时候不用破坏已有的客户端(这里也可以直接给方法一个state参数)
+* `TaskListDto`用来返回Task数据。它继承了`EntityDto`，`EntityDto`只定义了一个Id属性(也可以不继承`EntityDto`直接在Dto中添加Id属性)。使用`[AutoMapFrom]`属性创建从task实体到tasklistdto的自动映射，该属性定义在`Abp.AutoMapper`中
+* `ListResultDto`是个简单类，其中包含了一个list类型对象(也可以直接返回`List<TaskListDto>`)
+
+接下来实现`ITaskAppService`.
+```csharp
+public class TaskAppService : SimpleTaskAppAppServiceBase, ITaskAppService
+{
+    private readonly IRepository<Task> repository;
+
+    public TaskAppService(IRepository<Task> repository)
+    {
+        this.repository = repository;
+    }
+
+    public async Task<ListResultDto<TaskListDto>> GetAll(GetAllTasksInput input)
+    {
+        var tasks = await repository.GetAll()
+            .WhereIf(input.State.HasValue, t => t.State == input.State)
+            .OrderByDescending(t => t.CreationTime)
+            .ToListAsync();
+
+        return new ListResultDto<TaskListDto>(ObjectMapper.Map<List<TaskListDto>>(tasks));
+    }
+}
+```
+* `TaskAppService`继承于生成的启动模板中的`SimpleTaskAppAppServiceBase`(此类又继承于ABP中的`ApplicationService`)，这不是必须的，应用服务可以是普通的类，只是`ApplicationService`中包括了一些预先注入的服务(比如这里使用的`ObjectMapper`)
+* 这里使用了构造函数的依赖注入来获取repository对象
+* 仓储对象用来抽象实体对象的数据库操作。ABP为每个实体对象预定义了一个仓储(例如`IRepository<Task>`)来执行通用的任务。`IRepository.GetAll()`用来返回一个`IQueryable`用于查询实体
+* `WhereIf`是ABP中的扩展方法，用来简化使用`IQueryable.Where`
+  ```csharp
+  /// <summary>
+  /// Filters a <see cref="IQueryable{T}"/> by given predicate if given condition is true.
+  /// </summary>
+  /// <param name="query">Queryable to apply filtering</param>
+  /// <param name="condition">A boolean value</param>
+  /// <param name="predicate">Predicate to filter the query</param>
+  /// <returns>Filtered or not filtered query based on <paramref name="condition"/></returns>
+  public static IQueryable<T> WhereIf<T>(this IQueryable<T> query, bool condition,Expression<Func<T, bool>> predicate)
+  {
+      return condition
+          ? query.Where(predicate)
+          : query;
+  }
+  ```
+* `ObjectMapper`(来自`ApplicationService`基类，默认通过AutoMapper来实现)用于Task对象集合到TaskListDto对象集合的映射
+
+#### 测试TaskAppService
+
+在进一步创建用户接口之前，先对TaskAppService进行测试，如果对自动化测试不感兴趣可以跳过这一节。
+
+启动模板包括了一个.Tests项目
+
 #### 码云特技
 
 1. 使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
