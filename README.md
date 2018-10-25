@@ -597,13 +597,57 @@ public class IndexViewModel
 #### 任务列表页面
 
 给控制器的Index方法添加视图，修改Index视图如下：
+```html
+@using Albert.SimpleTaskApp.Web.Startup
+@model Albert.SimpleTaskApp.Web.Models.Tasks.IndexViewModel
 
+@{
+    ViewBag.Title = L("TaskList");
+    ViewBag.ActiveMenu = "TaskList"; //Matches with the menu name in SimpleTaskAppNavigationProvider to highlight the menu item
+}
 
-#### 码云特技
+<h2>@L("TaskList")</h2>
 
-1. 使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2. 码云官方博客 [blog.gitee.com](https://blog.gitee.com)
-3. 你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解码云上的优秀开源项目
-4. [GVP](https://gitee.com/gvp) 全称是码云最有价值开源项目，是码云综合评定出的优秀开源项目
-5. 码云官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6. 码云封面人物是一档用来展示码云会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+<div class="row">
+    <div>
+        <ul class="list-group" id="TaskList">
+            @foreach(var task in Model.Tasks)
+            {
+                <li class="list-group-item">
+                    <span class="pull-right label @Model.GetTaskLabel(task)">@L($"TaskState_{task.State}")</span>
+                    <h4 class="list-group-item-heading">@task.Title</h4>
+                    <div class="list-group-item-text">
+                        @task.CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
+                    </div>
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+```
+这里只是使用给定的模型通过Bootstrap的list group组件呈现视图，使用了`IndexViewModel.GetTaskLabel()`方法来获取task的标签类型，呈现结果如下：
+
+![Taskpage1](doc/image/taskpage1.png)
+
+在界面上导航菜单的名称、页面标题和任务的状态显示的为[xxx]，是因为这里调用了ABP框架中的L方法来本地化字符串。根据不同的语言获取对应的字符串。语言配置在.Core项目下的Localization/Source文件夹中的json格式文件中，添加该项目中调用L方法时传入参数对应的配置：
+```
+{
+  "culture": "en",
+  "texts": {
+    "HelloWorld": "Hello World!",
+    "ChangeLanguage": "Change language",
+    "HomePage": "HomePage",
+    "About": "About",
+    "Home_Description": "Welcome to SimpleTaskApp...",
+    "About_Description": "This is a simple startup template to use ASP.NET Core with ABP framework.",
+    "TaskList": "Task List",
+    "TaskState_Open": "Open",
+    "TaskState_Completed": "Completed"
+  }
+}
+```
+根据程序当前状态添加了最后三行的配置，重新启动项目可以看见显示正常：
+
+![Taskpage2](doc/image/taskpage2.png)
+
+使用ABP进行语言本地化很简单，可以通过[ABP官方教程](https://aspnetboilerplate.com/Pages/Documents/Localization)获取更过关于系统本地化的相关信息
