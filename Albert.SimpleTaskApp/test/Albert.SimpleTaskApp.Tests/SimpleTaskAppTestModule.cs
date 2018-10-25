@@ -17,6 +17,11 @@ namespace Albert.SimpleTaskApp.Tests
         )]
     public class SimpleTaskAppTestModule : AbpModule
     {
+        public SimpleTaskAppTestModule(SimpleTaskAppEntityFrameworkCoreModule appEntityFrameworkCoreModule)
+        {
+            appEntityFrameworkCoreModule.SkipDbSeed = true;
+        }
+
         public override void PreInitialize()
         {
             Configuration.UnitOfWork.IsTransactional = false; //EF Core InMemory DB does not support transactions.

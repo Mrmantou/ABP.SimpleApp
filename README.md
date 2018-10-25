@@ -376,11 +376,119 @@ public class TaskAppService : SimpleTaskAppAppServiceBase, ITaskAppService
   ```
 * `ObjectMapper`(来自`ApplicationService`基类，默认通过AutoMapper来实现)用于Task对象集合到TaskListDto对象集合的映射
 
+添加Task应用服务的代码结构：
+
+![Taskapp](doc/image/taskapp.png)
+
 #### 测试TaskAppService
 
 在进一步创建用户接口之前，先对TaskAppService进行测试，如果对自动化测试不感兴趣可以跳过这一节。
 
-启动模板包括了一个.Tests项目
+启动模板包括了一个.Tests项目用于测试代码。使用EF Core的内存数据库(InMemory database)替换SQL server。这样单元测试可以脱离真实的数据库进行工作。它可以针对每个测试创建一个单独的数据库，是的各个测试之间是隔离的。这里可以在运行测试之前使用`TestDataBuilder`类向内存数据库中添加一些测试数据
+```csharp
+public class TestDataBuilder
+{
+    private readonly SimpleTaskAppDbContext _context;
+
+    public TestDataBuilder(SimpleTaskAppDbContext context)
+    {
+        _context = context;
+    }
+
+    public void Build()
+    {
+        //create test data here...
+        _context.Tasks.AddRange(
+            new Task("Follow the white rabbit", "Follow the white rabbit in order to know the reality."),
+            new Task("Clean your room") { State = TaskState.Completed }
+            );
+    }
+}
+```
+
+可以在ABP示例项目中查看`TestDataBuilder`的使用方法，在这里添加了两个task到dbcontext中，这样可以编写单元测试断言数据库中的task对象个数为2.下面将对前面的`TaskAppService.GetAll`方法进行测试：
+```csharp
+public class TaskAppService_Tests : SimpleTaskAppTestBase
+{
+    private readonly ITaskAppService taskAppService;
+
+    public TaskAppService_Tests()
+    {
+        taskAppService = Resolve<ITaskAppService>();
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Should_Get_All_Tasks()
+    {
+        //Act
+        var output = await taskAppService.GetAll(new GetAllTasksInput());
+
+        //Assert
+        output.Items.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Should_Get_Filtered_Tasks()
+    {
+        //Act
+        var output = await taskAppService.GetAll(
+            new GetAllTasksInput() { State = TaskState.Open });
+
+        //Assert
+        output.Items.ShouldAllBe(t => t.State == TaskState.Open);
+    }
+}
+```
+
+这里编写了GetAll方法的两中不同情景的测试，打开Test Explorer：
+
+![Testexplorer](doc/image/testexplorer.png)
+
+运行单元测试，发现出现错误了：
+
+![Testwrong](doc/image/testwrong.png)
+
+在output窗口查看输出信息：
+```
+[10/25/2018 3:20:50 PM Error] [xUnit.net 00:00:06.93]     Albert.SimpleTaskApp.Tests.Tasks.TaskAppService_Tests.Should_Get_All_Tasks [FAIL]
+[10/25/2018 3:20:50 PM Informational] [xUnit.net 00:00:06.94]       Shouldly.ShouldAssertException : output.Items.Count
+    should be
+2
+    but was
+[10/25/2018 3:20:50 PM Informational] [xUnit.net 00:00:06.94]       5
+```
+在错误信息中可以看出Should_Get_All_Tasks出错，期待的结果为2，但是实际的是5，说明数据库查到了5条数据，在TestDataBuilder明明添加的只有两条数据，这里变成5条，问题出现在哪里呢？可以debug单元测试，查看数据内容，这里的问题处在前面通过Seed的方式向数据库中添加了3条数据，在单元测试中并需要Seed的数据，那么需要对前面的代码进行调整，在`SimpleTaskAppEntityFrameworkCoreModule`中添加属性SkipDbSeed来控制是否向数据库中Seed初始化数据，该属性默认为false
+```csharp
+/// <summary>
+/// 单元测试中跳过向数据库中添加初始化数据，测试数据在单元测试中由TestDataBuilder添加
+/// </summary>
+public bool SkipDbSeed { get; set; }
+```
+并修改PostInitialize方法：
+```csharp
+public override void PostInitialize()
+{
+    if (!SkipDbSeed)
+    {
+        SeedHelper.SeedDb(IocManager);
+    }
+}
+```
+这样就可以通过SkipDbSeed来控制是否向数据库中Seed初始化数据。在单元测试中需要跳过Seed数据，将SkipDbSeed置为true，在`SimpleTaskAppTestModule`中添加构造函数，并通过构造函数注入`SimpleTaskAppEntityFrameworkCoreModule`对象，添加的代码如下所示：
+```csharp
+public SimpleTaskAppTestModule(SimpleTaskAppEntityFrameworkCoreModule appEntityFrameworkCoreModule)
+{
+    appEntityFrameworkCoreModule.SkipDbSeed = true;
+}
+```
+重新编译运行单元测试：
+
+![Testtask](doc/image/testtask.png)
+
+可以看见单元测试全部通过，最后一个单元测试是由启动模板创建的，可以暂时忽略。
+
+**需要注意的是：** ABP模板已经自动添加了xUnit和Shouldly的nuget包，这样就可以直接在单元测试中使用它们。
+
 
 #### 码云特技
 
