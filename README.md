@@ -65,7 +65,7 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
   ```Json
   "ConnectionStrings": {
     "Default": "Server=(localdb)\\MSSQLLocalDB; Database=SimpleTaskAppDb; Trusted_Connection=True;"
-    ```
+  ```
 * F5启动项目.
 
 启动成功，将会看到项目模板的用户界面：
@@ -139,7 +139,18 @@ namespace Albert.SimpleTaskApp.Tasks
 * `TaskState`是个定义`Task`状态的简单枚举类型
 * `Clock.Now`默认返回`DateTime.Now`。它提供了以个抽象，当需要的时候可以很容易的切换到`DateTime.UtcNow`。在ABP框架中通常使用`Clock.Now`来替换`DateTime.Now`
 * 使用注释属性Table表示保存`Task`对象到数据库中的表AppTasks
-* 这里使用注释属性来设置Task在数据库中字段的属性，静态类SimpleTaskAppConsts定义了一下常量
+* 这里使用注释属性来设置Task在数据库中字段的属性，静态类SimpleTaskAppConsts定义了一些常量
+  ```csharp
+  public class SimpleTaskAppConsts
+  {
+      public const string LocalizationSourceName = "SimpleTaskApp";
+
+      public const string ConnectionStringName = "Default";
+
+      public const int MaxTitleLength = 256;
+      public const int MaxDescriptionLength = 64 * 1024;//64KB
+  }
+  ```
 
 #### 添加Task到DbContext
 
@@ -457,7 +468,7 @@ public class TaskAppService_Tests : SimpleTaskAppTestBase
     but was
 [10/25/2018 3:20:50 PM Informational] [xUnit.net 00:00:06.94]       5
 ```
-在错误信息中可以看出Should_Get_All_Tasks出错，期待的结果为2，但是实际的是5，说明数据库查到了5条数据，在TestDataBuilder明明添加的只有两条数据，这里变成5条，问题出现在哪里呢？可以debug单元测试，查看数据内容，这里的问题处在前面通过Seed的方式向数据库中添加了3条数据，在单元测试中并需要Seed的数据，那么需要对前面的代码进行调整，在`SimpleTaskAppEntityFrameworkCoreModule`中添加属性SkipDbSeed来控制是否向数据库中Seed初始化数据，该属性默认为false
+在错误信息中可以看出Should_Get_All_Tasks出错，期待的结果为2，但是实际的是5，说明数据库查到了5条数据，在TestDataBuilder明明添加的只有两条数据，这里变成5条，问题出现在哪里呢？可以debug单元测试，查看数据内容，这里的问题出在前面通过Seed的方式向数据库中添加了3条数据，在单元测试中并需要Seed的数据，那么需要对前面的代码进行调整，在`SimpleTaskAppEntityFrameworkCoreModule`中添加属性SkipDbSeed来控制是否向数据库中Seed初始化数据，该属性默认为false
 ```csharp
 /// <summary>
 /// 单元测试中跳过向数据库中添加初始化数据，测试数据在单元测试中由TestDataBuilder添加
@@ -488,6 +499,104 @@ public SimpleTaskAppTestModule(SimpleTaskAppEntityFrameworkCoreModule appEntityF
 可以看见单元测试全部通过，最后一个单元测试是由启动模板创建的，可以暂时忽略。
 
 **需要注意的是：** ABP模板已经自动添加了xUnit和Shouldly的nuget包，这样就可以直接在单元测试中使用它们。
+
+#### Task列表视图
+
+##### 添加一个新的菜单项
+
+在.Web项目中导航配置类`SimpleTaskAppNavigationProvider`中添加新的菜单选项：
+```csharp
+public override void SetNavigation(INavigationProviderContext context)
+{
+    context.Manager.MainMenu
+        .AddItem(
+            new MenuItemDefinition(
+                PageNames.Home,
+                L("HomePage"),
+                url: "",
+                icon: "fa fa-home"
+                )
+        ).AddItem(
+            new MenuItemDefinition(
+                PageNames.About,
+                L("About"),
+                url: "Home/About",
+                icon: "fa fa-info"
+                )
+        ).AddItem(
+            new MenuItemDefinition(
+                PageNames.Task,
+                L("TaskList"),
+                url: "Tasks",
+                icon: "fa fa-tasks")
+        );
+}
+```
+* 上面的代码可以看出启动模板项目中包含两个页面：主页(Home)和关于(About)，这里可以修改它们或者新增一个页面，这里先保留这两个页面添加了一个新的菜单选项
+* PageNames中定义了页面名称相关常量
+  ```csharp
+  public class PageNames
+  {
+      public const string Home = "Home";
+      public const string About = "About";
+      public const string Task = "Task List";
+  }
+  ```
+  这里也可以不定义常量，直接填写字符串"Task List"
+
+#### 创建TaskController 和 ViewModel
+
+在.Web项目中添加一个新的控制器类`TasksController`，内容如下所示：
+```csharp
+public class TasksController : SimpleTaskAppControllerBase
+{
+    private readonly ITaskAppService taskAppService;
+
+    public TasksController(ITaskAppService taskAppService)
+    {
+        this.taskAppService = taskAppService;
+    }
+
+    public async Task<IActionResult> Index(GetAllTasksInput input)
+    {
+        var output = await taskAppService.GetAll(input);
+
+        var model = new IndexViewModel(output.Items);
+
+        return View(model);
+    }
+}
+```
+* TasksController继承了SimpleTaskAppControllerBase(该类又继承了AbpController)，该基类包含了这个项目中控制器通用的代码
+* 注入了`ITaskAppService`来获取task列表
+* 为了避免直接将GetAll方法的结果传递给视图，这里创建了`IndexViewModel`类：
+```csharp
+public class IndexViewModel
+{
+    public IReadOnlyList<TaskListDto> Tasks { get; set; }
+
+    public IndexViewModel(IReadOnlyList<TaskListDto> tasks)
+    {
+        Tasks = tasks;
+    }
+
+    public string GetTaskLabel(TaskListDto task)
+    {
+        switch (task.State)
+        {
+            case TaskState.Open:
+                return "label-success";
+            default:
+                return "label-default";
+        }
+    }
+}
+```
+这个简单的视图模型通过构造函数获取一个task的列表(通过ITaskAppService获取到)。还包含了一个方法GetTaskLabel用来进行Bootstrap标签的转换(显示任务状态的图标)
+
+#### 任务列表页面
+
+给控制器的Index方法添加视图，修改Index视图如下：
 
 
 #### 码云特技
