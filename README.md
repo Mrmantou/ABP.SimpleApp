@@ -64,7 +64,7 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
    本项目使用的为LocalDb，将Server修改为(localdb)\MSSQLLocalDB，修改后的连接为：
   ```Json
   "ConnectionStrings": {
-    "Default": "Server=(localdb)\MSSQLLocalDB; Database=SimpleTaskAppDb; Trusted_Connection=True;"
+    "Default": "Server=(localdb)\\MSSQLLocalDB; Database=SimpleTaskAppDb; Trusted_Connection=True;"
     ```
 * F5启动项目.
 
