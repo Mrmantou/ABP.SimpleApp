@@ -22,7 +22,10 @@ namespace Albert.SimpleTaskApp.Web.Controllers
         {
             var output = await taskAppService.GetAll(input);
 
-            var model = new IndexViewModel(output.Items);
+            var model = new IndexViewModel(output.Items)
+            {
+                SelectedTaskState = input.State
+            };
 
             return View(model);
         }

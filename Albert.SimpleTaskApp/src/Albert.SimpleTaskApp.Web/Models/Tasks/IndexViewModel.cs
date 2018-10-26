@@ -1,5 +1,7 @@
-﻿using Albert.SimpleTaskApp.Tasks;
+﻿using Abp.Localization;
+using Albert.SimpleTaskApp.Tasks;
 using Albert.SimpleTaskApp.Tasks.Dtos;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +12,8 @@ namespace Albert.SimpleTaskApp.Web.Models.Tasks
     public class IndexViewModel
     {
         public IReadOnlyList<TaskListDto> Tasks { get; set; }
+
+        public TaskState? SelectedTaskState { get; set; }
 
         public IndexViewModel(IReadOnlyList<TaskListDto> tasks)
         {
@@ -25,6 +29,32 @@ namespace Albert.SimpleTaskApp.Web.Models.Tasks
                 default:
                     return "label-default";
             }
+        }
+
+        public List<SelectListItem> GetTasksStateSelectListItems(ILocalizationManager localizationManager)
+        {
+            var list = new List<SelectListItem>
+            {
+                new SelectListItem
+                {
+                    Text=localizationManager.GetString(SimpleTaskAppConsts.LocalizationSourceName,"AllTasks"),
+                    Value="",
+                    Selected=SelectedTaskState==null
+                }
+            };
+
+            list.AddRange(Enum.GetValues(typeof(TaskState))
+                .Cast<TaskState>()
+                .Select(state =>
+                    new SelectListItem
+                    {
+                        Text = localizationManager.GetString(SimpleTaskAppConsts.LocalizationSourceName, $"TaskState_{state}"),
+                        Value = state.ToString(),
+                        Selected = state == SelectedTaskState
+                    })
+            );
+
+            return list;
         }
     }
 }

@@ -128,7 +128,7 @@ namespace Albert.SimpleTaskApp.Tasks
     /// </summary>
     public enum TaskState : byte
     {
-        Open = 1,
+        Open = 0,
         Complete = 1
     }
 }
@@ -651,3 +651,86 @@ public class IndexViewModel
 ![Taskpage2](doc/image/taskpage2.png)
 
 使用ABP进行语言本地化很简单，可以通过[ABP官方教程](https://aspnetboilerplate.com/Pages/Documents/Localization)获取更过关于系统本地化的相关信息
+
+#### 过滤Task
+
+在上文中的Task控制器中的获取index页面时是能够传入`GetAllTasksInput`类型参数的，通过这个参数可以对返回的task进行过滤。这里在task列表视图上添加一个下拉框提供过滤操作，在页面首部添加下拉框：
+
+```html
+<h2>
+    @L("TaskList")
+    <span class="pull-right">
+        @Html.DropDownListFor(
+            model=>model.SelectedTaskState,
+            Model.GetTasksStateSelectListItems(LocalizationManager),
+            new {
+                @class ="form-control",
+                id = "TaskStateCombobox"
+            })
+    </span>
+</h2>
+```
+由上面的代码可以看出在`IndexViewModel`添加了新的属性`SelectedTaskState`和方法`GetTasksStateSelectListItems`:
+```csharp
+public class IndexViewModel
+{
+    //......
+    public TaskState? SelectedTaskState { get; set; }
+
+    public List<SelectListItem> GetTasksStateSelectListItem(ILocalizationManager localizationManager)
+    {
+        var list = new List<SelectListItem>
+        {
+            new SelectListItem
+            {
+                Text=localizationManager.GetStrin(SimpleTaskAppConsts.LocalizationSourceName,"Allasks"),
+                Value="",
+                Selected=SelectedTaskState==null
+            }
+        };
+
+        list.AddRange(Enum.GetValues(typeof(TaskState))
+            .Cast<TaskState>()
+            .Select(state =>
+                new SelectListItem
+                {
+                    Text = localizationManager.GetStrin(SimpleTaskAppConsts.LocalizationSourceName,$"TaskState_{state}"),
+                    Value = state.ToString(),
+                    Selected = state == SelectedTaskState
+                })
+        );
+
+        return list;
+    }
+}
+```
+同时，语言本地化配置中添加Allasks的配置
+```json
+"AllTasks": "All Tasks"
+```
+在控制器处理请求时将请求状态中的`State`传递给将要返回的`IndexViewModel`:
+```csharp
+public async Task<IActionResult> Index(GetAllTasksInput input)
+{
+    var output = await taskAppService.GetAll(input);
+
+    var model = new IndexViewModel(output.Items)
+    {
+        SelectedTaskState = input.State
+    };
+
+    return View(model);
+}
+```
+编译启动项目，可以在页面看到下拉框，但是还不能使用，需要添加js代码来实现下拉框值改变时重新请求并刷新页面，在.Web项目中创建js文件wwwroot\js\views\tasks\index.js
+```js
+(function ($) {
+    $(function () {
+        var _$taskStateCombobox = $('#TaskStateCombobox');
+
+        _$taskStateCombobox.change(function () {
+            location.href = 'Tasks?State=' + _$taskStateCombobox.val();
+        });
+    });
+})(jQuery);
+```

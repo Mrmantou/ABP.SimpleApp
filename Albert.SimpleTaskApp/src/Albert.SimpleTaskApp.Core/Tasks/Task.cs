@@ -56,7 +56,7 @@ namespace Albert.SimpleTaskApp.Tasks
     /// </summary>
     public enum TaskState : byte
     {
-        Open = 1,
+        Open = 0,
         Completed = 1
     }
 }

@@ -6,12 +6,23 @@
     ViewBag.ActiveMenu = "TaskList"; //Matches with the menu name in SimpleTaskAppNavigationProvider to highlight the menu item
 }
 
-<h2>@L("TaskList")</h2>
+<h2>
+    @L("TaskList")
+    <span class="pull-right">
+        @Html.DropDownListFor(
+            model=>model.SelectedTaskState,
+            Model.GetTasksStateSelectListItems(LocalizationManager),
+            new {
+                @class ="form-control",
+                id = "TaskStateCombobox"
+            })
+    </span>
+</h2>
 
 <div class="row">
     <div>
         <ul class="list-group" id="TaskList">
-            @foreach(var task in Model.Tasks)
+            @foreach (var task in Model.Tasks)
             {
                 <li class="list-group-item">
                     <span class="pull-right label @Model.GetTaskLabel(task)">@L($"TaskState_{task.State}")</span>
