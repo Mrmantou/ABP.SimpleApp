@@ -734,3 +734,36 @@ public async Task<IActionResult> Index(GetAllTasksInput input)
     });
 })(jQuery);
 ```
+
+在向视图中添加这段js代码之前，先使用 Bundler & Minifier 对js文件进行压缩，右键wwwroot\js\views\tasks\index.js -> Bundler & Minifier -> Minify File:
+
+![Minifier](doc/image/minifier.png)
+
+这个操作会在.Web项目bundleconfig.json文件中添加下面的配置：
+```json
+{
+  "outputFileName": "wwwroot/js/views/tasks/index.min.js",
+  "inputFiles": [
+    "wwwroot/js/views/tasks/index.js"
+  ]
+}
+```
+同时生成压缩版的js文件：
+
+![Minijs](doc/image/minijs.png)
+
+在修改index.js文件后，index.min.js文件会自动重新生成，接下将js引用到页面视图：
+```html
+@section scripts
+    {
+    <environment names="Development">
+        <script src="~/js/views/tasks/index.js"></script>
+    </environment>
+
+    <environment names="Staging,Production">
+        <script src="~/js/views/tasks/index.min.js"></script>
+    </environment>
+}
+```
+通过这段代码，在开发环境中将使用index.js，在生产环境中使用压缩版本index.min.js，这是ASP.NET Core MVC 项目中一个常用的做法。
+
