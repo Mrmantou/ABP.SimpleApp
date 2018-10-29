@@ -1,6 +1,7 @@
 ﻿using Abp.Domain.Entities;
 using Abp.Domain.Entities.Auditing;
 using Abp.Timing;
+using Albert.SimpleTaskApp.People;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -38,16 +39,21 @@ namespace Albert.SimpleTaskApp.Tasks
         /// </summary>
         public TaskState State { get; set; }
 
+        [ForeignKey(nameof(AssignedPersonId))]
+        public Person AssignedPerson { get; set; }
+        public Guid? AssignedPersonId { get; set; }
+
         public Task()
         {
             CreationTime = Clock.Now;
             State = TaskState.Open;
         }
 
-        public Task(string title, string description = null) : this()
+        public Task(string title, string description = null, Guid? assignedPersonId = null) : this()
         {
             Title = title;
             Description = description;
+            AssignedPersonId = assignedPersonId;
         }
     }
 

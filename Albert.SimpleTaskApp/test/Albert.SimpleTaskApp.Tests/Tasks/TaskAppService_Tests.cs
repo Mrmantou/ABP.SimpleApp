@@ -1,9 +1,7 @@
 ﻿using Albert.SimpleTaskApp.Tasks;
 using Albert.SimpleTaskApp.Tasks.Dtos;
 using Shouldly;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using Xunit;
 
 namespace Albert.SimpleTaskApp.Tests.Tasks
@@ -25,6 +23,8 @@ namespace Albert.SimpleTaskApp.Tests.Tasks
 
             //Assert
             output.Items.Count.ShouldBe(2);
+            output.Items.Count(t => t.AssignedPersonId.HasValue).ShouldBe(1);
+            output.Items.Count(t => t.AssignedPersonName != null).ShouldBe(1);
         }
 
         [Fact]

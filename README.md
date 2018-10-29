@@ -387,6 +387,8 @@ public class TaskAppService : SimpleTaskAppAppServiceBase, ITaskAppService
   ```
 * `ObjectMapper`(来自`ApplicationService`基类，默认通过AutoMapper来实现)用于Task对象集合到TaskListDto对象集合的映射
 
+**注意：** 这里的**ToListAsync**扩展方法需要 *using System.Linq;using Microsoft.EntityFrameworkCore;* 声明
+
 添加Task应用服务的代码结构：
 
 ![Taskapp](doc/image/taskapp.png)
@@ -630,7 +632,7 @@ public class IndexViewModel
 ![Taskpage1](doc/image/taskpage1.png)
 
 在界面上导航菜单的名称、页面标题和任务的状态显示的为[xxx]，是因为这里调用了ABP框架中的L方法来本地化字符串。根据不同的语言获取对应的字符串。语言配置在.Core项目下的Localization/Source文件夹中的json格式文件中，添加该项目中调用L方法时传入参数对应的配置：
-```
+```json
 {
   "culture": "en",
   "texts": {
@@ -655,7 +657,6 @@ public class IndexViewModel
 #### 过滤Task
 
 在上文中的Task控制器中的获取index页面时是能够传入`GetAllTasksInput`类型参数的，通过这个参数可以对返回的task进行过滤。这里在task列表视图上添加一个下拉框提供过滤操作，在页面首部添加下拉框：
-
 ```html
 <h2>
     @L("TaskList")
@@ -839,3 +840,211 @@ public class TasksController_Tests : SimpleTaskAppWebTestBase
 ```
 还可以对HTML进行更深入的更细致的检查。但在多数情况下，检查基本标签就足够了。
 
+运行单元测试，结果是通过的，运行应用程序，在下拉框选择不同状态的任务，列表展示的数据为对应状态的任务数据。
+
+至此，对于task的单表的展示都已经完成，接下在再向引用添加新的实体Person 
+
+#### 创建Person实体
+
+这里将Person的概念添加到应用中，并分配任务给人。先定义一个简单的Person实体：
+```csharp
+[Table("AppPersons")]
+public class Person : AuditedEntity<Guid>
+{
+    [Required]
+    [StringLength(SimpleTaskAppConsts.MaxNameLength)]
+    public string Name { get; set; }
+
+    public Person() { }
+
+    public Person(string name)
+    {
+        Name = name;
+    }
+}
+```
+这次为了演示，设置Id(主键)类型为Guid。实体继承AuditedEntity(包含了：CreationTime, CreaterUserId, LastModificationTime 和 LastModifierUserId 属性)。
+
+#### 关联Person和Task实体
+
+在Task实体添加AssignedPerson 属性(只列出改变的部分)：
+```csharp
+/// <summary>
+/// 任务
+/// </summary>
+[Table("AppTasks")]
+public class Task : Entity, IHasCreationTime
+{
+    //................
+
+    [ForeignKey(nameof(AssignedPersonId))]
+    public Person AssignedPerson { get; set; }
+    public Guid? AssignedPersonId { get; set; }
+
+
+    public Task(string title, string description = null, Guid?assignedPersonId = null) : this()
+    {
+        Title = title;
+        Description = description;
+        AssignedPersonId = assignedPersonId;
+    }
+}
+```
+AssignedPerson是可选的。这样任务可以分配给一个人，也可以不分配。
+
+#### 添加Person到DbContext
+
+最后添加新的Person实体到DbContext类：
+```csharp
+public class SimpleTaskAppDbContext : AbpDbContext
+{
+    //Add DbSet properties for your entities...
+    //...
+    public DbSet<Person> People { get; set; }
+    //...
+}
+```
+
+#### 针对Person添加新的数据迁移
+
+在Package Manager Console运行命令：add-migration "Add_Person"
+
+![Addpersonmigration](doc/image/addpersonmigration.png)
+
+运行命令成功，在.EntityFrameworkCore项目中生成新的迁移类：
+```csharp
+public partial class Add_Person : Migration
+{
+    protected override void Up(MigrationBuildermigrationBuilder)
+    {
+        migrationBuilder.AddColumn<Guid>(
+            name: "AssignedPersonId",
+            table: "AppTasks",
+            nullable: true);
+
+        migrationBuilder.CreateTable(
+            name: "AppPersons",
+            columns: table => new
+            {
+                Id = table.Column<Guid>(nullable: false),
+                CreationTime = table.Column<DateTime>(nullable false),
+                CreatorUserId = table.Column<long>(nullable:true),
+                LastModificationTime = table.Column<DateTime(nullable: true),
+                LastModifierUserId = table.Column<long(nullable: true),
+                Name = table.Column<string>(maxLength: 32,nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_AppPersons", x => x.Id);
+            });
+
+        migrationBuilder.CreateIndex(
+            name: "IX_AppTasks_AssignedPersonId",
+            table: "AppTasks",
+            column: "AssignedPersonId");
+
+        migrationBuilder.AddForeignKey(
+            name: "FK_AppTasks_AppPersons_AssignedPersonId",
+            table: "AppTasks",
+            column: "AssignedPersonId",
+            principalTable: "AppPersons",
+            principalColumn: "Id",
+            onDelete: ReferentialAction.Restrict);
+    }
+
+    //...
+}
+```
+注意到上面的代码中的：
+```
+onDelete: ReferentialAction.Restrict
+```
+这里手动修改为:
+```
+onDelete: ReferentialAction.SetNull
+```
+修改的作用：当删除一个Person对象时，分配给这个对象的任务变成未分配状态，这一点在这个demo中是不重要的，只是为了说明在需要的时候可以修改迁移代码。实际中，在将其应用到数据库之前都先检查生成的迁移代码。之后再应用迁移到数据库：
+
+![Updatedatabase2](doc/image/updatedatabase2.png)
+
+向前面的Task一样，这里还是通过Seed的方式向数据库添加初始数据：
+
+
+
+
+#### 在返回Task列表中添加分配的Person
+
+修改TaskAppService 来返回分配的人员信息，首先在TaskListDto中添加两个属性：
+```csharp
+[AutoMapFrom(typeof(Task))]
+public class TaskListDto : EntityDto, IHasCreationTime
+{
+    public Guid? AssignedPersonId { get; set; }
+    public string AssignedPersonName { get; set; }
+}
+```
+在查询中通过**Include**方法(.Include(t => t.AssignedPerson))添加Task.AssignedPerson属性：
+```csharp
+public async Task<ListResultDto<TaskListDto>> GetAll(GetAllTasksInput input)
+{
+    var tasks = await repository.GetAll()
+        .Include(t => t.AssignedPerson)
+        .WhereIf(input.State.HasValue, t => t.State ==input.State)
+        .OrderByDescending(t => t.CreationTime)
+        .ToListAsync();
+
+    return new ListResultDto<TaskListDto(ObjectMapper.Map<List<TaskListDto>>(tasks));
+}
+```
+这样，GetAll方法将随tasks一并返回分配人员的信息。通过AutoMapper，新属性自动复制到Dto对象。
+
+#### 修改单元测试测试分配人员
+
+这里修改单元测试查看在获取task列表时分配人员是否一并返回。首先，修改`TestDataBuilder`中的初始化测试数据，分配一个人员给task：
+```csharp
+public void Build()
+{
+    //create test data here...
+    var neo = new Person("Neo");
+    _context.People.Add(neo);
+    _context.SaveChanges();
+
+    _context.Tasks.AddRange(
+        new Task("Follow the white rabbit", "Follow thewhite rabbit in order to know thereality.",neo.Id),
+        new Task("Clean your room") { State =TaskState.Completed }
+        );
+}
+```
+
+然后，修改TaskAppService_Tests.Should_Get_All_Tasks方法来检查返回的任务中是否有一个具有分配人员信息：
+```csharp
+[Fact]
+public async System.Threading.Tasks.TaskShould_Get_All_Tasks()
+{
+    //Act
+    var output = await taskAppService.GetAll(newGetAllTasksInput());
+
+    //Assert
+    output.Items.Count.ShouldBe(2);
+    output.Items.Count(t => t.AssignedPersonName !=null).ShouldBe(1);
+}
+```
+编译，运行单元测试通过。
+
+**注意：** **Count**扩展方法需要 *using System.Linq;* 声明。
+
+#### 在任务列表页面显示分配人员
+
+修改Tasks\Index.cshtml来显示AssignedPersonName：
+```html
+@foreach (var task in Model.Tasks)
+{
+    <li class="list-group-item">
+        <span class="pull-right label@Model.GetTaskLabel(task)">@L($"TaskState{task.State}")</span>
+        <h4 class="list-group-itemheading">@task.Title</h4>
+        <div class="list-group-item-text">
+            @task.CreationTime.ToString("yyyy-MM-ddHH:mm:ss") | @(task.AssignedPersonName??("Unassigned"))
+        </div>
+    </li>
+}
+```

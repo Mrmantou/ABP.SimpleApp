@@ -24,6 +24,7 @@ namespace Albert.SimpleTaskApp.Tasks
         public async Task<ListResultDto<TaskListDto>> GetAll(GetAllTasksInput input)
         {
             var tasks = await repository.GetAll()
+                .Include(t => t.AssignedPerson)
                 .WhereIf(input.State.HasValue, t => t.State == input.State)
                 .OrderByDescending(t => t.CreationTime)
                 .ToListAsync();

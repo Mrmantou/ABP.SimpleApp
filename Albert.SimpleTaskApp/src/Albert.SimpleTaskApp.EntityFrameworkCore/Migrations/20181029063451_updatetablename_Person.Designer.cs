@@ -4,14 +4,16 @@ using Albert.SimpleTaskApp.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Albert.SimpleTaskApp.Migrations
 {
     [DbContext(typeof(SimpleTaskAppDbContext))]
-    partial class SimpleTaskAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20181029063451_updatetablename_Person")]
+    partial class updatetablename_Person
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,7 +40,7 @@ namespace Albert.SimpleTaskApp.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AppPersons");
+                    b.ToTable("AppTask");
                 });
 
             modelBuilder.Entity("Albert.SimpleTaskApp.Tasks.Task", b =>
