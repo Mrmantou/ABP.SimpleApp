@@ -767,3 +767,75 @@ public async Task<IActionResult> Index(GetAllTasksInput input)
 ```
 通过这段代码，在开发环境中将使用index.js，在生产环境中使用压缩版本index.min.js，这是ASP.NET Core MVC 项目中一个常用的做法。
 
+#### 自动测试Task列表页面
+
+可以创建整合了ASP.NET Core MVC基础结构的集成测试。这样就能完整的测试到服务端的代码，如果对自动测试不感兴趣，可以跳过此节。
+
+ABP启动模板包含了一个.Web.Tests项目来进行ASP.NET Core MVC基础结构的集成测试。这里创建一个简单的测试去请求TaskController.Index并检查返回值：
+```csharp
+public class TasksController_Tests : SimpleTaskAppWebTestBase
+{
+    public async System.Threading.Tasks.TaskShould_Get_Tasks_By_State()
+    {
+        //Act
+        var response = await GetResponseAsStringAsync(
+            GetUrl<TasksController>(nameo(TasksController.Index), new
+            {
+                State = TaskState.Open
+            }));
+
+        //Assert
+        response.ShouldNotBeNullOrWhiteSpace();
+    }
+}
+```
+GetResponseAsStringAsync和GetUrl是由ABP中AbpAspNetCoreIntegratedTestBase类提供的帮助方法。这里也可以直接使用客户端(HttpClient实例)代理来进行请求。但是使用这些快捷方法使得操作更简单。可以查询ASP.NET Core集成测试文档来获取更多信息。
+
+调试测试，可以查看响应的HTML：
+
+![Task Index](doc/image/TaskIndex.png)
+
+可以看出Index页面能够无异常的返回响应。当需要进一步检查返回的HTML是不是所期待的结果时，又该如何操作？这里由许多库可以用来解析HTML。AngleSharp就是其中一种，并已经预装在ABP启动模板的 .Web.Tests 项目中。这样就可以使用它来进行HTML的检查：
+```csharp
+public class TasksController_Tests : SimpleTaskAppWebTestBase
+{
+    [Fact]
+    public async System.Threading.Tasks.TaskShould_Get_Tasks_By_State()
+    {
+        //Act
+        var response = await GetResponseAsStringAsync(
+            GetUrl<TasksController>(nameo(TasksController.Index), new
+            {
+                State = TaskState.Open
+            }));
+
+        //Assert
+        response.ShouldNotBeNullOrWhiteSpace();
+
+        //get tasks from database
+        var tasksInDatabase = await UsingDbContextAsync(asyncdbContext =>
+        {
+            return await dbContext.Tasks
+                .Where(t => t.State == TaskState.Open)
+                .ToListAsync();
+        });
+
+        //parse html response to check if tasks in the databas are returned
+        var document = new HtmlParser().Parse(response);
+        var listItems = document.QuerySelectorAll("#TaskListli");
+
+        //check task count
+        listItems.Length.ShouldBe(tasksInDatabase.Count);
+
+        //check if returned list items are same those in thedatabase
+        foreach (var item in listItems)
+        {
+            var header = item.QuerySelector(".list-group-itemheading");
+            var taskTitle = header.InnerHtml.Trim();
+            tasksInDatabase.Any(t => t.Title ==taskTitle).ShouldBeTrue();
+        }
+    }
+}
+```
+还可以对HTML进行更深入的更细致的检查。但在多数情况下，检查基本标签就足够了。
+
