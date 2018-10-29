@@ -1112,3 +1112,46 @@ public async System.Threading.Tasks.TaskShould_Get_All_Tasks()
 ```json
 "Unassigned": "Unassigned"
 ```
+
+启动项目，在task列表页面可以看到分配人员信息：
+
+![Taskpage3](doc/image/taskpage3.png)
+
+#### 创建新任务的应用服务方法
+
+现在程序已经能够展示task，但是还没有创建task的页面，首先，在ITaskAppService 添加Create接口
+```csharp
+public interface ITaskAppService : IApplicationService
+{
+    //...
+    System.Threading.Tasks.Task Create(CreateTaskInputinput);
+}
+```
+并在TaskAppService中实现该方法：
+```csharp
+public async System.Threading.Tasks.Task Create(CreateTaskInput input)
+{
+    var task = ObjectMapper.Map<Task>(input);
+    await repository.InsertAsync(task);
+}
+```
+Create方法自动将输入参数input映射为Task对象，并通过repository将其插入到数据库。CreateTaskInput Dto为：
+```csharp
+[AutoMapTo(typeof(Task))]
+public class CreateTaskInput
+{
+    [Required]
+    [StringLength(SimpleTaskAppConsts.MaxTitleLength)]
+    public string Title { get; set; }
+
+    [StringLengt(SimpleTaskAppConsts.MaxDescriptionLength)]
+    public string Description { get; set; }
+
+    public Guid? AssignedPersonId { get; set; }
+}
+```
+通过AutoMapTo配置到Task实体的映射，添加注释进行有效性验证，常量配置和前文中的一致。
+
+#### 测试Task创建服务
+
+在TaskAppService_Tests class中添加集成测试来对Create进行测试：
