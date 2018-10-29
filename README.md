@@ -967,10 +967,70 @@ onDelete: ReferentialAction.SetNull
 
 ![Updatedatabase2](doc/image/updatedatabase2.png)
 
-向前面的Task一样，这里还是通过Seed的方式向数据库添加初始数据：
+向前面的Task一样，这里还是通过Seed的方式向数据库添加初始数据，添加类InitialPerson创建初始数据：
+```csharp
+public class InitialPerson
+{
+    private readonly SimpleTaskAppDbContext dbContext;
 
+    public InitialPerson(SimpleTaskAppDbContext dbContext)
+    {
+        this.dbContext = dbContext;
+    }
 
+    public void Create()
+    {
+        CreatePeople();
+    }
 
+    private void CreatePeople()
+    {
+        if(dbContext.People.Any())
+        {
+            return;
+        }
+        
+        dbContext.Add(new Person("Neo"));
+        dbContext.SaveChanges();
+    }
+}
+```
+在SeedHelper中调用InitialPerson：
+```csharp
+private static void SeedDb(SimpleTaskAppDbContext context)
+{
+    new InitialPerson(context).Create();
+    new InitialTask(context).Create();
+}
+```
+需要注意的时people的创建需要在task之前，同时修改task的seed数据初始化方法：
+```csharp
+private void CreateTask()
+{
+    var neo = context.People.FirstOrDefault();
+    if (context.Tasks.Any())
+    {
+        if (context.Tasks.All(t => t.AssignedPersonId == null))
+        {
+            context.Tasks.Last().AssignedPersonId = neo.Id;
+            context.SaveChanges();
+        }
+        
+        return;
+    }
+
+    context.AddRange(
+        new Task { Title = "Chinese", Description = "recite the text" },
+        new Task { Title = "Math", Description = "do all the homework" },
+        new Task { Title = "English", Description = "recite new word", AssignedPersonId =neo?.Id }
+        );
+
+    context.SaveChanges();
+}
+```
+在初始化task数据中添加了AssignedPerson的id，如果按照教程先进行了task数据的seed，到这里在添加people的数据就在前面的if语句中进行更新，如果下载源代码直接迁移就在下面的AddRange方法中添加。启动程序可以在数据库中查看添加的数据：
+
+![Seeddata2](doc/image/seeddata2.png)
 
 #### 在返回Task列表中添加分配的Person
 
@@ -1043,8 +1103,12 @@ public async System.Threading.Tasks.TaskShould_Get_All_Tasks()
         <span class="pull-right label@Model.GetTaskLabel(task)">@L($"TaskState{task.State}")</span>
         <h4 class="list-group-itemheading">@task.Title</h4>
         <div class="list-group-item-text">
-            @task.CreationTime.ToString("yyyy-MM-ddHH:mm:ss") | @(task.AssignedPersonName??("Unassigned"))
+            @task.CreationTime.ToString("yyyy-MM-ddHH:mm:ss") | @(task.AssignedPersonName??L("Unassigned"))
         </div>
     </li>
 }
+```
+这里使用到了L方法，需要在本地化中添加：
+```json
+"Unassigned": "Unassigned"
 ```

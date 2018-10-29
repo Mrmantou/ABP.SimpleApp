@@ -22,15 +22,22 @@ namespace Albert.SimpleTaskApp.EntityFrameworkCore.Seed.Tasks
 
         private void CreateTask()
         {
+            var neo = context.People.FirstOrDefault();
             if (context.Tasks.Any())
             {
+                if (context.Tasks.All(t => t.AssignedPersonId == null))
+                {
+                    context.Tasks.Last().AssignedPersonId = neo.Id;
+                    context.SaveChanges();
+                }
+                
                 return;
             }
 
             context.AddRange(
                 new Task { Title = "Chinese", Description = "recite the text" },
                 new Task { Title = "Math", Description = "do all the homework" },
-                new Task { Title = "English", Description = "recite new word" }
+                new Task { Title = "English", Description = "recite new word", AssignedPersonId = neo?.Id }
                 );
 
             context.SaveChanges();

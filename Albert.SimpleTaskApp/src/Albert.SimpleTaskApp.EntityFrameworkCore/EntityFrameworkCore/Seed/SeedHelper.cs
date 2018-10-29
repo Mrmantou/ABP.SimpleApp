@@ -1,6 +1,7 @@
 ﻿using Abp.Dependency;
 using Abp.Domain.Uow;
 using Abp.EntityFrameworkCore.Uow;
+using Albert.SimpleTaskApp.EntityFrameworkCore.Seed.People;
 using Albert.SimpleTaskApp.EntityFrameworkCore.Seed.Tasks;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,6 +20,7 @@ namespace Albert.SimpleTaskApp.EntityFrameworkCore.Seed
 
         private static void SeedDb(SimpleTaskAppDbContext context)
         {
+            new InitialPerson(context).Create();
             new InitialTask(context).Create();
         }
 
