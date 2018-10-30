@@ -1155,3 +1155,328 @@ public class CreateTaskInput
 #### 测试Task创建服务
 
 在TaskAppService_Tests class中添加集成测试来对Create进行测试：
+```csharp
+public class TaskAppService_Tests : SimpleTaskAppTestBase
+{
+    //...
+    [Fact]
+    public async System.Threading.Tasks.TaskShould_Create_New_Task_With_Title()
+    {
+        await taskAppService.Create(new CreateTaskInput
+        {
+            Title = "Newly created task #1"
+        });
+
+        UsingDbContext(context =>
+        {
+            var task1 = context.Tasks.FirstOrDefault(t = t.Title == "Newly created task #1");
+            task1.ShouldNotBeNull();
+        });
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.TaskShould_Create_New_Task_With_Title_And_Assigned_Peron()
+    {
+        var neo = UsingDbContext(context =>context.People.Single(t => t.Name == "Neo"));
+
+        await taskAppService.Create(new CreateTaskInput
+        {
+            Title = "Newly created task #1",
+            AssignedPersonId = neo.Id
+        });
+
+        UsingDbContext(context =>
+        {
+            var task1 = context.Tasks.FirstOrDefault(t = t.Title == "Newly created task #1");
+            task1.ShouldNotBeNull();
+            task1.AssignedPersonId.ShouldBe(neo.Id);
+        });
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.TaskShould_Not_Create_New_Task_Without_Title()
+    {
+        await Assert.ThrowsAsync<AbpValidationException(async () =>
+        {
+            await taskAppService.Create(newCreateTaskInput
+            {
+                Title = null
+            });
+        });
+    }
+}
+```
+第一个测试通过title添加一个task，第二个通过title和分配人员添加一个task，最后一个通过创建一个无效的任务展示异常效果
+
+#### 任务创建页面
+
+通过上面的测试可以知道TaskAppService.Create正常工作。接下来通过创建一个页面来添加一个新的任务，首先，在TaskController添加Create方法：
+```csharp
+public class TasksController : SimpleTaskAppControllerBase
+{
+    private readonly ITaskAppService taskAppService;
+    private readonly IPeopleAppService peopleAppService;
+
+    public TasksController(ITaskAppService taskAppService, IPeopleAppService peopleAppService)
+    {
+        this.taskAppService = taskAppService;
+        this.peopleAppService = peopleAppService;
+    }
+
+    //...
+    
+    public async Task<IActionResult> Create()
+    {
+        var peopleSelectListItems = (await peopleAppService.GetPeopleComboboxItems())
+            .Items
+            .Select(p => p.ToSelectListItem())
+            .ToList();
+
+        peopleSelectListItems.Insert(0, new SelectListItem { Value = string.Empty, Text = ("Unassigned"), Selected = true });
+
+        return View(new CreateTaskViewModel(peopleSelectListItems));
+    }
+}
+```
+在TasksController构造函数中注入了IPeopleAppService用来获取people下拉框的选项。这里也可以直接通过注入IRepository<Person, Guid>，但是提取封装之后有了更好的层次性和可复用性。
+
+IPeopleAppService.GetPeopleComboboxItems方法定义在应用层：
+```csharp
+public interface IPeopleAppService
+{
+    Task<ListResultDto<ComboboxItemDto>> GetPeopleComboboxItems();
+}
+
+public class PeopleAppService : SimpleTaskAppAppServiceBase, IPeopleAppService
+{
+    private readonly IRepository<Person, Guid> repository;
+
+    public PeopleAppService(IRepository<Person, Guid> repository)
+    {
+        this.repository = repository;
+    }
+
+    public async Task<ListResultDto<ComboboxItemDto>> GetPeopleComboboxItems()
+    {
+        var people = await repository.GetAllListAsync();
+        return new ListResultDto<ComboboxItemDto>(
+            people.Select(p => new ComboboxItemDto(p.Id.ToString("D"), p.Name)).ToList()
+            );
+    }
+}
+```
+ComboboxItemDto 是由ABP框架定义的简单类：
+```csharp
+/// <summary>
+/// This DTO can be used as a simple item for a combobox/list.
+/// </summary>
+[Serializable]
+public class ComboboxItemDto
+{
+    /// <summary>
+    /// Value of the item.
+    /// </summary>
+    public string Value { get; set; }
+
+    /// <summary>
+    /// Display text of the item.
+    /// </summary>
+    public string DisplayText { get; set; }
+
+    /// <summary>
+    /// Is selected?
+    /// </summary>
+    public bool IsSelected { get; set; }
+
+    /// <summary>
+    /// Creates a new <see cref="ComboboxItemDto"/>.
+    /// </summary>
+    public ComboboxItemDto() { }
+
+    /// <summary>
+    /// Creates a new <see cref="ComboboxItemDto"/>.
+    /// </summary>
+    /// <param name="value">Value of the item</param>
+    /// <param name="displayText">Display text of the item</param>
+    public ComboboxItemDto(string value, string displayText)
+    {
+        Value = value;
+        DisplayText = displayText;
+    }
+}
+```
+用来传递combobox 选项数据。TaskController.Create方法仅仅调用了IPeopleAppService.GetPeopleComboboxItems的方法，然后将返回list结果转化为SelectListItem(AspNet Core定义)集合，并通过CreateTaskViewModel 传递给视图：
+```csharp
+public class CreateTaskViewModel
+{
+    public List<SelectListItem> People { get; set; }
+
+    public CreateTaskViewModel(List<SelectListItem>people)
+    {
+        People = people;
+    }
+}
+```
+
+给TaskController.Create方法添加视图(该视图使用的model为CreateTaskViewModel)：
+```html
+@model Albert.SimpleTaskApp.Web.Models.People.CreateTaskViewModel
+
+<h2>@L("NewTask")</h2>
+
+@section scripts
+    {
+    <environment names="Development">
+        <script src="~/js/views/tasks/create.js"></script>
+    </environment>
+
+    <environment names="Staging,Production">
+        <script src="~/js/views/tasks/create.min.js"></script>
+    </environment>
+}
+
+<form id="TaskCreationForm">
+    <div class="form-group">
+        <label for="Title">@L("Title")</label>
+        <input type="text" name="Title" class="form-control" placeholder="@L("Title")" required maxlength="@Albert.SimpleTaskApp.SimpleTaskAppConsts.MaxTitleLength" />
+    </div>
+
+    <div class="form-group">
+        <label for="Description">@L("Description")</label>
+        <input type="text" name="Description" class="form-control" placeholder="@L("Description")" maxlength="@Albert.SimpleTaskApp.SimpleTaskAppConsts.MaxDescriptionLength" />
+    </div>
+
+    <div class="form-group">
+        @Html.Label(L("AssignedPerson"))
+        @Html.DropDownList(
+            "AssignedPersonId",
+            Model.People,
+            new {
+                @class = "form-control",
+                id = "AssignedPersonCombobox"
+            })
+    </div>
+
+    <button type="submit" class="btn btn-default">@L("Save")</button>
+</form>
+```
+
+包含的create.js:
+```js
+(function ($) {
+    $(function () {
+        var _$form = $('#TaskCreationForm');
+
+        _$form.find('input:first').focus();
+
+        _$form.validate();
+
+        _$form.find('button[type=submit]')
+            .click(function (e) {
+                e.preventDefault();
+
+                if (!_$form.valid()) {
+                    return;
+                }
+
+                var input = _$form.serializeFormToObject();
+                abp.services.app.task.create(input)
+                    .done(function () {
+                        location.href = '/Tasks';
+                    });
+            });
+    });
+})(jQuery);
+```
+在这段JavaScript代码中：
+* 为表单验证准备(使用jquery validation插件)，在保存按钮点击之后进行验证。
+* 使用jquery插件serializeFormToObject(解决方案中jquery-extensions.js) 将表单数据转换为json对象( jquery-extensions.js包含在 _Layout.cshtml中的最后一个脚本文件)
+  ```html
+  <environment names="Development">
+     <script src="~/lib/json2/json2.js"></script>
+     <script src="~/lib/jquery/dist/jquery.js"></script>
+     <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
+     <script src="~/lib/moment/min/moment-with-locales.js"></script>
+     <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+     <script src="~/lib/blockUI/jquery.blockUI.js"></script>
+     <script src="~/lib/toastr/toastr.js"></script>
+     <script src="~/lib/sweetalert/dist/sweetalert-dev.js"></script>
+     <script src="~/lib/spin.js/spin.js"></script>
+     <script src="~/lib/spin.js/jquery.spin.js"></script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/abp.js"><script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/libsabp.jquery.js"></ script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/ libsabp.toastr.js"></ script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/  libsabp.blockUI.js"></script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/libs/  abp.sweetalert.js"></script>
+     <script src="~/lib/abp-web-resources/Abp/Framework/scripts/libsabp.spin.js"></  script>
+  
+     <script src="~/js/jquery-extensions.js"></script>
+  </environment>
+  
+  <environment names="Staging,Production">
+      <script src="~/view-resources/Views/_Bundles/layout-libs.min.js" asp-append-  version="true"></script>
+  </environment>
+  ```
+  在开发环境中jquery-extensions.js直接加载最后，但是生产环境中直接使用的整体压缩的方式，需要在bundleconfig.json中相应的位置加上：
+  ```json
+  {
+    "outputFileName": "wwwroot/view-resources/Views/_Bundles/layout-libs.min.js",
+    "inputFiles": [
+      "wwwroot/lib/json2/json2.js",
+      "wwwroot/lib/jquery/dist/jquery.js",
+      "wwwroot/lib/bootstrap/dist/js/bootstrap.js",
+      "wwwroot/lib/moment/min/moment-with-locales.js",
+      "wwwroot/lib/jquery-validation/dist/jquery.validate.js",
+      "wwwroot/lib/blockUI/jquery.blockUI.js",
+      "wwwroot/lib/toastr/toastr.js",
+      "wwwroot/lib/sweetalert/dist/sweetalert-dev.js",
+      "wwwroot/lib/spin.js/spin.js",
+      "wwwroot/lib/spin.js/jquery.spin.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/abp.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.jquery.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.toastr.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.blockUI.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.sweetalert.js",
+      "wwwroot/lib/abp-web-resources/Abp/Framework/scripts/libs/abp.spin.js",
+      "wwwroot/js/jquery-extensions.js"
+    ]
+  },
+  ```
+* 使用abp.services.task.create方法来调用 TaskAppService.Create. 这是ABP的一个重要特性。使得开发过程中能够直接通过JavaScript代码调用应用服务层，像调用JavaScript方法一样。
+
+jquery-extensions.js代码内容：
+```js
+(function ($) {
+    //serializeFormToObject plugin for jQuery
+    $.fn.serializeFormToObject = function () {
+        //serialize to array
+        var data = $(this).serializeArray();
+
+        //add also disabled items
+        $(':disabled[name]', this)
+            .each(function () {
+                data.push({ name: this.name, value: $(this).val() });
+            });
+
+        //map to object
+        var obj = {};
+        data.map(function (x) { obj[x.name] = x.value; });
+        
+        return obj;
+    };
+
+})(jQuery);
+```
+最后在任务列表页面添加一个“Add Task”按钮，这样就能够导航到任务常见页面：
+```html
+<span><a class="btn btn-primary btn-sm" asp-action="Create">@L("AddNew")</a></span>
+```
+在本地化配置中添加：
+```json
+"NewTask": "New Task",
+"Title": "Title",
+"Description": "Description",
+"Save": "Save",
+"AddNew": "Add New",
+"AssignedPerson": "Assigned Person"
+```

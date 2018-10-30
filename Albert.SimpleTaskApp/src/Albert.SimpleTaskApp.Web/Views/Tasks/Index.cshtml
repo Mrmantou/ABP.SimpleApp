@@ -19,6 +19,7 @@
 
 <h2>
     @L("TaskList")
+    <span><a class="btn btn-primary btn-sm" asp-action="Create">@L("AddNew")</a></span>
     <span class="pull-right">
         @Html.DropDownListFor(
             model=>model.SelectedTaskState,
