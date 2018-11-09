@@ -16,6 +16,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Migrations\20180927070638_Upgrade_ABP_3.8.3.cs" />
+    <Compile Remove="Migrations\20181109094454_update_Person.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Albert.SimpleTaskApp.Core\Albert.SimpleTaskApp.Core.csproj" />

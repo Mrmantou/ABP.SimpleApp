@@ -14,6 +14,16 @@ namespace Albert.SimpleTaskApp.People
         [StringLength(SimpleTaskAppConsts.MaxNameLength)]
         public string Name { get; set; }
 
+        [StringLength(SimpleTaskAppConsts.MaxPhoneNumberLength)]
+        public string PhoneNumber { get; set; }
+
+        public int Age { get; set; }
+
+        public char Gender { get; set; }
+
+        [EmailAddress]
+        public string Email { get; set; }
+
         public Person() { }
 
         public Person(string name)

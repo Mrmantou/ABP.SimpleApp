@@ -1,5 +1,4 @@
-﻿
-using Abp.Runtime.Validation;
+﻿using Abp.Runtime.Validation;
 using Albert.SimpleTaskApp.Tasks;
 using Albert.SimpleTaskApp.Tasks.Dtos;
 using Shouldly;

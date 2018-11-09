@@ -1,5 +1,6 @@
 ﻿using Abp.Application.Services.Dto;
 using Abp.Domain.Repositories;
+using Albert.SimpleTaskApp.People.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,11 +9,11 @@ using System.Threading.Tasks;
 
 namespace Albert.SimpleTaskApp.People
 {
-    public class PeopleAppService : SimpleTaskAppAppServiceBase, IPeopleAppService
+    public class PersonAppService : SimpleTaskAppAppServiceBase, IPersonAppService
     {
         private readonly IRepository<Person, Guid> repository;
 
-        public PeopleAppService(IRepository<Person, Guid> repository)
+        public PersonAppService(IRepository<Person, Guid> repository)
         {
             this.repository = repository;
         }
@@ -23,6 +24,15 @@ namespace Albert.SimpleTaskApp.People
             return new ListResultDto<ComboboxItemDto>(
                 people.Select(p => new ComboboxItemDto(p.Id.ToString("D"), p.Name)).ToList()
                 );
+        }
+
+        
+
+        public async Task Create(CreatePersonInput input)
+        {
+            var person = ObjectMapper.Map<Person>(input);
+
+            await repository.InsertAsync(person);
         }
     }
 }

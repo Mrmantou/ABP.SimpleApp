@@ -16,9 +16,9 @@ namespace Albert.SimpleTaskApp.Web.Controllers
     public class TasksController : SimpleTaskAppControllerBase
     {
         private readonly ITaskAppService taskAppService;
-        private readonly IPeopleAppService peopleAppService;
+        private readonly IPersonAppService peopleAppService;
 
-        public TasksController(ITaskAppService taskAppService, IPeopleAppService peopleAppService)
+        public TasksController(ITaskAppService taskAppService, IPersonAppService peopleAppService)
         {
             this.taskAppService = taskAppService;
             this.peopleAppService = peopleAppService;
