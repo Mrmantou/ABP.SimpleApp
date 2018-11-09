@@ -21,7 +21,7 @@
     <ProjectReference Include="..\Albert.SimpleTaskApp.Core\Albert.SimpleTaskApp.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Abp.EntityFrameworkCore" Version="4.0.0" />
+    <PackageReference Include="Abp.EntityFrameworkCore" Version="4.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="2.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.1.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.Design" Version="1.1.6" />
