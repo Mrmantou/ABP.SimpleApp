@@ -11,5 +11,6 @@
         public const int MaxNameLength = 32;
 
         public const int MaxPhoneNumberLength = 13;
+        public const int MaxAddressLength = 200;
     }
 }

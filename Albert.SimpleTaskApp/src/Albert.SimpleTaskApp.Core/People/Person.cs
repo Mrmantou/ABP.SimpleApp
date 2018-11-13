@@ -19,10 +19,13 @@ namespace Albert.SimpleTaskApp.People
 
         public int Age { get; set; }
 
-        public char Gender { get; set; }
+        public char? Gender { get; set; }
 
         [EmailAddress]
         public string Email { get; set; }
+
+        [StringLength(SimpleTaskAppConsts.MaxAddressLength)]
+        public string Address { get; set; }
 
         public Person() { }
 
