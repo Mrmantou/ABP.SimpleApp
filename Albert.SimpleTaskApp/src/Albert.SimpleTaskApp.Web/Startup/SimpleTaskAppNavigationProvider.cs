@@ -31,6 +31,12 @@ namespace Albert.SimpleTaskApp.Web.Startup
                         L("TaskList"),
                         url: "Tasks",
                         icon: "fa fa-tasks")
+                ).AddItem(
+                    new MenuItemDefinition(
+                        PageNames.People,
+                        L("People"),
+                        url: "people",
+                        icon: "fa fa-users")
                 );
         }
 
