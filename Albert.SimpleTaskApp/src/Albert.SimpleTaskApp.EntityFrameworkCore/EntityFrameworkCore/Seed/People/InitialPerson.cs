@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Albert.SimpleTaskApp.EntityFrameworkCore.Seed.People
 {
-   public class InitialPerson
+    public class InitialPerson
     {
         private readonly SimpleTaskAppDbContext dbContext;
 
@@ -22,12 +22,20 @@ namespace Albert.SimpleTaskApp.EntityFrameworkCore.Seed.People
 
         private void CreatePeople()
         {
-            if(dbContext.People.Any())
+            if (dbContext.People.Any())
             {
                 return;
             }
-            
-            dbContext.Add(new Person("Neo"));
+
+            dbContext.Add(new Person
+            {
+                Name = "Neo",
+                Age = 25,
+                Gender = Genter.Male,
+                PhoneNumber = "+86-12388888888",
+                Email = "task@abp.com",
+                Address = "King County, Washington, United States"
+            });
             dbContext.SaveChanges();
         }
     }
