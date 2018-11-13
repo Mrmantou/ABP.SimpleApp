@@ -17,11 +17,13 @@ namespace Albert.SimpleTaskApp.Tests.TestDatas
         {
             //create test data here...
             var neo = new Person("Neo");
+            var athy = new Person("Athy");
             _context.People.Add(neo);
+            _context.People.Add(athy);
             _context.SaveChanges();
 
             _context.Tasks.AddRange(
-                new Task("Follow the white rabbit", "Follow the white rabbit in order to know the reality.",neo.Id),
+                new Task("Follow the white rabbit", "Follow the white rabbit in order to know the reality.", neo.Id),
                 new Task("Clean your room") { State = TaskState.Completed }
                 );
         }

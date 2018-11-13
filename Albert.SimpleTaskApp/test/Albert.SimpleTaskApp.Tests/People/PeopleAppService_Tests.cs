@@ -21,14 +21,31 @@ namespace Albert.SimpleTaskApp.Tests.People
         {
             await personAppService.Create(new CreatePersonInput
             {
-                Name = "albert"
+                Name = "li"
             });
 
             UsingDbContext(context =>
             {
-                var person1 = context.People.FirstOrDefault(p => p.Name == "albert");
+                var person1 = context.People.FirstOrDefault(p => p.Name == "li");
                 person1.ShouldNotBeNull();
             });
+        }
+
+        [Fact]
+        public async Task Should_Get_All_People()
+        {
+            var output = await personAppService.GetAll(new GetAllPeopleInput());
+
+            output.Items.Count.ShouldBe(2);
+        }
+
+        [Fact]
+        public async Task Should_Get_Filtered_People()
+        {
+            var output = await personAppService.GetAll(new GetAllPeopleInput() { Name="Athy" });
+
+            output.Items.Count.ShouldBe(1);
+            output.Items.ShouldAllBe(p => p.Name == "Athy");
         }
     }
 }
