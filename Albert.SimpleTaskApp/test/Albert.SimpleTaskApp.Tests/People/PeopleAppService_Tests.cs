@@ -1,4 +1,5 @@
-﻿using Albert.SimpleTaskApp.People;
+﻿using Abp.Runtime.Validation;
+using Albert.SimpleTaskApp.People;
 using Albert.SimpleTaskApp.People.Dtos;
 using Shouldly;
 using System.Linq;
@@ -32,6 +33,18 @@ namespace Albert.SimpleTaskApp.Tests.People
         }
 
         [Fact]
+        public async Task Should_Create_New_Person_Without_Name()
+        {
+            await Assert.ThrowsAsync<AbpValidationException>(async () =>
+            {
+                await personAppService.Create(new CreatePersonInput
+                {
+                    Name = null
+                });
+            });
+        }
+
+        [Fact]
         public async Task Should_Get_All_People()
         {
             var output = await personAppService.GetAll(new GetAllPeopleInput());
@@ -42,7 +55,7 @@ namespace Albert.SimpleTaskApp.Tests.People
         [Fact]
         public async Task Should_Get_Filtered_People()
         {
-            var output = await personAppService.GetAll(new GetAllPeopleInput() { Name="Athy" });
+            var output = await personAppService.GetAll(new GetAllPeopleInput() { Name = "Athy" });
 
             output.Items.Count.ShouldBe(1);
             output.Items.ShouldAllBe(p => p.Name == "Athy");
