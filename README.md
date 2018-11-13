@@ -31,6 +31,7 @@ ABP官网教程基于AspNet Core + Entity Framework Core 来创建的分层Web�
 
 #### 教程目录：
 * [1.1创建项目](doc/Tutorial/1.1创建项目.md)
-* [2.1开发应用-创建Task](doc/Tutorial/2.1开发应用-创建Task.md)
-* [2.2开发应用-创建Person](doc/Tutorial/2.2开发应用-创建Person.md)
+* [2.1开发应用-创建Task](doc/Tutorial/2.1开发应用-创建Task实体.md)
+* [2.2开发应用-创建Person](doc/Tutorial/2.2开发应用-创建Person实体.md)
 * [2.3开发应用-创建新任务](doc/Tutorial/2.3开发应用-创建新任务.md)
+* [2.4开发应用-创建People展示页面](doc/Tutorial/2.4开发应用-创建People展示页面.md)
