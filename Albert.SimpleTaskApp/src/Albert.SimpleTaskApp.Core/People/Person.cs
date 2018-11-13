@@ -19,7 +19,7 @@ namespace Albert.SimpleTaskApp.People
 
         public int? Age { get; set; }
 
-        public char? Gender { get; set; }
+        public Genter? Gender { get; set; }
 
         [EmailAddress]
         public string Email { get; set; }
@@ -33,5 +33,11 @@ namespace Albert.SimpleTaskApp.People
         {
             Name = name;
         }
+    }
+
+    public enum Genter
+    {
+        Male = 0,
+        Female = 1
     }
 }

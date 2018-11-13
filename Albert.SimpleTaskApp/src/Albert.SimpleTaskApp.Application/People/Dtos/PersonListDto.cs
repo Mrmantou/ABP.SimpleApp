@@ -14,7 +14,7 @@ namespace Albert.SimpleTaskApp.People.Dtos
 
         public int? Age { get; set; }
 
-        public char? Gender { get; set; }
+        public Genter? Gender { get; set; }
 
         public string Email { get; set; }
 

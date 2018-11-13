@@ -1,4 +1,5 @@
-﻿using Albert.SimpleTaskApp.People.Dtos;
+﻿using Albert.SimpleTaskApp.People;
+using Albert.SimpleTaskApp.People.Dtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,13 +16,13 @@ namespace Albert.SimpleTaskApp.Web.Models.People
             People = people;
         }
 
-        public string GetPersonGender(char? gender)
+        public string GetPersonGender(Genter? gender)
         {
             switch (gender)
             {
-                case 'm':
+                case Genter.Male:
                     return "fa fa-mars";
-                case 'f':
+                case Genter.Female:
                     return "fa fa-venus";
                 default:
                     return "fa fa-genderless";
