@@ -1,6 +1,9 @@
 ﻿using Abp.Application.Services.Dto;
+using Abp.Collections.Extensions;
 using Abp.Domain.Repositories;
+using Abp.Linq.Extensions;
 using Albert.SimpleTaskApp.People.Dtos;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +29,16 @@ namespace Albert.SimpleTaskApp.People
                 );
         }
 
-        
+        public async Task<ListResultDto<PersonListDto>> GetAll(GetAllPeopleInput input)
+        {
+            var people = await repository.GetAll()
+                  .WhereIf(!string.IsNullOrEmpty(input.Name), p => p.Name == input.Name)
+                  .OrderBy(p => p.Name)
+                  .ToListAsync();
+
+            return new ListResultDto<PersonListDto>(ObjectMapper.Map<List<PersonListDto>>(people));
+        }
+
 
         public async Task Create(CreatePersonInput input)
         {

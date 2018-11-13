@@ -12,5 +12,7 @@ namespace Albert.SimpleTaskApp.People
         Task<ListResultDto<ComboboxItemDto>> GetPeopleComboboxItems();
 
         Task Create(CreatePersonInput input);
+
+        Task<ListResultDto<PersonListDto>> GetAll(GetAllPeopleInput input);
     }
 }
