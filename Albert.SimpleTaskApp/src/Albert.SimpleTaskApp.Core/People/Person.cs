@@ -17,7 +17,7 @@ namespace Albert.SimpleTaskApp.People
         [StringLength(SimpleTaskAppConsts.MaxPhoneNumberLength)]
         public string PhoneNumber { get; set; }
 
-        public int Age { get; set; }
+        public int? Age { get; set; }
 
         public char? Gender { get; set; }
 
