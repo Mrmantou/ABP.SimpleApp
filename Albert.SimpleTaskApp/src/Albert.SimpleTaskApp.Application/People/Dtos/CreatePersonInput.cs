@@ -18,9 +18,9 @@ namespace Albert.SimpleTaskApp.People.Dtos
 
         public int? Age { get; set; }
 
-        public Genter? Gender { get; set; }
+        public Gender? Gender { get; set; }
 
-        [EmailAddress]
+        //[EmailAddress]
         public string Email { get; set; }
 
         [StringLength(SimpleTaskAppConsts.MaxAddressLength)]

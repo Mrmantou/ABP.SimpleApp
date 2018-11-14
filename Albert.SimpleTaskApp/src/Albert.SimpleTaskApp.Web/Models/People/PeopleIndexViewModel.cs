@@ -16,13 +16,13 @@ namespace Albert.SimpleTaskApp.Web.Models.People
             People = people;
         }
 
-        public string GetPersonGender(Genter? gender)
+        public string GetPersonGender(Gender? gender)
         {
             switch (gender)
             {
-                case Genter.Male:
+                case Gender.Male:
                     return "fa fa-mars";
-                case Genter.Female:
+                case Gender.Female:
                     return "fa fa-venus";
                 default:
                     return "fa fa-genderless";

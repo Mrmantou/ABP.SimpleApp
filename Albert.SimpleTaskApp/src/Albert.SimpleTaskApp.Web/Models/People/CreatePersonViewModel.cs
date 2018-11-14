@@ -19,7 +19,9 @@ namespace Albert.SimpleTaskApp.Web.Models.People
 
         private List<SelectListItem> InitGender()
         {
-            return EnumHelper.GetSelectList<Genter>();
+            var genderList = EnumHelper.GetSelectList<Gender>();
+            genderList.Insert(0, new SelectListItem { Text = "Unknow", Value = string.Empty });
+            return genderList;
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Albert.SimpleTaskApp.EntityFrameworkCore.Seed.People
             {
                 Name = "Neo",
                 Age = 25,
-                Gender = Genter.Male,
+                Gender = Gender.Male,
                 PhoneNumber = "+86-12388888888",
                 Email = "task@abp.com",
                 Address = "King County, Washington, United States"
