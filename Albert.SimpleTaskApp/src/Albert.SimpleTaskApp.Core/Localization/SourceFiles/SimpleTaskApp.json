@@ -19,6 +19,14 @@
     "Save": "Save",
     "AddNew": "Add New",
     "AssignedPerson": "Assigned Person",
-    "People": "People"
+
+    "NewPerson": "New Person",
+    "People": "People",
+    "Name": "Name",
+    "Age": "Age",
+    "Gender": "Gender",
+    "PhoneNumber": "Phone Number",
+    "Email": "Email",
+    "Address": "Address"
   }
 }

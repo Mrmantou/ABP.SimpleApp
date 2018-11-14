@@ -2,10 +2,14 @@
 @model Albert.SimpleTaskApp.Web.Models.People.PeopleIndexViewModel
 
 @{
-    ViewData["Title"] = "Index";
+    ViewBag.Title = L("People");
+    ViewBag.ActiveMenu = "People"; //Matches with the menu name in SimpleTaskAppNavigationProvider to highlight the menu item
 }
 
-<h2>@L("People")</h2>
+<h2>
+    @L("People")
+    <span><a class="btn btn-primary btn-sm" asp-action="Create">@L("AddNew")</a></span>
+</h2>
 
 <div class="row">
     <div>
