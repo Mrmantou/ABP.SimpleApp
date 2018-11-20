@@ -27,6 +27,8 @@ namespace EventCloud.Events.Notifications
         {
             this.userManager = userManager;
             this.eventManager = eventManager;
+
+            Logger = NullLogger.Instance;
         }
 
         [UnitOfWork]
