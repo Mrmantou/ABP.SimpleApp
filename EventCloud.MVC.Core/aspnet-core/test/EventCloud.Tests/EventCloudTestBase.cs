@@ -1,8 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Abp;
+﻿using Abp;
 using Abp.Authorization.Users;
 using Abp.Events.Bus;
 using Abp.Events.Bus.Entities;
@@ -14,6 +10,11 @@ using EventCloud.EntityFrameworkCore;
 using EventCloud.EntityFrameworkCore.Seed.Host;
 using EventCloud.EntityFrameworkCore.Seed.Tenants;
 using EventCloud.MultiTenancy;
+using EventCloud.Tests.Data;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace EventCloud.Tests
 {
@@ -44,6 +45,8 @@ namespace EventCloud.Tests
                 NormalizeDbContext(context);
                 new TenantRoleAndUserBuilder(context, 1).Create();
             });
+
+            UsingDbContext(context => new TestDataBuilder(context).Build());
 
             LoginAsDefaultTenantAdmin();
         }
